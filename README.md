@@ -30,4 +30,8 @@ az aks create \
     --attach-acr myacr123
 ---
 
-2 - create dep.yml
+2 - create deployment.yml
+3 - create azure-pipeline.yaml
+
+
+
