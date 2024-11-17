@@ -1,103 +1,124 @@
-# Flask-Azure
-runnig flask project in azure cloud
+# Flask-Azure: Running a Flask Project on Azure Cloud
 
+## Step 1: Build and Run the Docker Image
 
-for creating image: 
-docker build -t flask-app .
+To build and run the Flask application container locally, follow these steps:
 
-for running image:
-docker run -p 5000:5000 flask-app
-======================================================
-on aks in azure:
-First, create these Azure resources (using Azure Cloud Shell or Azure CLI):
----
-az login
+1. **Build the Docker image:**
 
-# Create Resource Group
-az group create --name myResourceGroup --location eastus
+   ```bash
+   docker build -t flask-app .
+   ```
 
-# Create Azure Container Registry (ACR)
-az acr create --resource-group myResourceGroup \
-              --name myacr123 \
-              --sku Basic
+2. **Run the Docker image:**
 
-# Create AKS cluster with ACR integration
-az aks create \
-    --resource-group myResourceGroup \
-    --name myAKSCluster \
-    --node-count 1 \
-    --generate-ssh-keys \
-    --attach-acr myacr123
----
+   ```bash
+   docker run -p 5000:5000 flask-app
+   ```
 
-2 - create deployment.yml
-3 - create azure-pipeline.yaml
-4 - Prepare repository
-===
-# Your repository structure should look like this:
+## Step 2: Set Up Azure Resources
+
+Before deploying to Azure Kubernetes Service (AKS), create the necessary resources.
+
+1. **Login to Azure:**
+
+   ```bash
+   az login
+   ```
+
+2. **Create a Resource Group:**
+
+   ```bash
+   az group create --name myResourceGroup --location eastus
+   ```
+
+3. **Create Azure Container Registry (ACR):**
+
+   ```bash
+   az acr create --resource-group myResourceGroup --name myacr123 --sku Basic
+   ```
+
+4. **Create AKS Cluster with ACR Integration:**
+
+   ```bash
+   az aks create \
+     --resource-group myResourceGroup \
+     --name myAKSCluster \
+     --node-count 1 \
+     --generate-ssh-keys \
+     --attach-acr myacr123
+   ```
+
+## Step 3: Prepare Your Project Repository
+
+Ensure your repository structure looks like this:
+
+```
 /your-project
-  ├── app.py
-  ├── requirements.txt
-  ├── Dockerfile
-  ├── azure-pipelines.yml
-  └── k8s/
-      ├── deployment.yaml
-      └── service.yaml
-===
-5 - Set Up Azure DevOps:
+├── app.py
+├── requirements.txt
+├── Dockerfile
+├── azure-pipelines.yml
+└── k8s/
+    ├── deployment.yaml
+    └── service.yaml
+```
 
-- Go to dev.azure.com
-- Create a new project or use existing one
-- Go to Project Settings > Service connections
+## Step 4: Set Up Azure DevOps
 
+1. **Go to Azure DevOps**: Navigate to [dev.azure.com](https://dev.azure.com).
+2. **Create or use an existing project**.
+3. **Configure Service Connections**:
 
-6 - Create Service Connections:
+   - **ACR Service Connection**:
+     - Go to `Project Settings > Service connections`.
+     - Choose `New service connection > Docker Registry > Azure Container Registry`.
+     - Select your subscription and ACR, then name it `acr-service-connection`.
 
-6.1 : Create ACR Service Connection:
--- Go to Project Settings > Service connections
--- New service connection
--- Choose "Docker Registry"
--- Select "Azure Container Registry"
--- Select your subscription and ACR
--- Name it "acr-service-connection"
+   - **AKS Service Connection**:
+     - Go to `Project Settings > Service connections`.
+     - Choose `New service connection > Kubernetes > Select your subscription and AKS cluster`.
+     - Name it `aks-service-connection`.
 
-6.2 : Create AKS Service Connection:
--- New service connection
--- Choose "Kubernetes"
--- Select your subscription and AKS cluster
--- Name it "aks-service-connection"
+## Step 5: Create and Configure Azure Pipeline
 
+1. **Create a Pipeline**:
+   - Go to `Pipelines > New Pipeline`.
+   - Choose `Azure Repos Git` (or your source repository).
+   - Select your repository and choose `Existing Azure Pipelines YAML file`.
+   - Select `/azure-pipelines.yml`.
 
+2. **Update Pipeline Variables**:
+   In `azure-pipelines.yml`, replace the following values:
 
+   ```yaml
+   acrName: 'myacr123.azurecr.io'  # Your ACR name
+   resourceGroup: 'myResourceGroup'  # Your resource group name
+   aksClusterName: 'myAKSCluster'  # Your AKS cluster name
+   ```
 
-7 - Create the Pipeline:
-Go to Pipelines > New Pipeline
-Choose Azure Repos Git (or your source)
-Select your repository
-Choose "Existing Azure Pipelines YAML file"
-Select /azure-pipelines.yml
+3. **Run the Pipeline**:
+   - Save and run the pipeline.
+   - Monitor the stages as they execute.
 
+## Step 6: Verify the Deployment
 
-8 - Update Variables:
-Replace these values in azure-pipelines.yaml:
+1. **Get AKS credentials**:
 
-acrName: 'myacr123.azurecr.io'  # Your ACR name
-resourceGroup: 'myResourceGroup'  # Your resource group
-aksClusterName: 'myAKSCluster'   # Your AKS cluster name
+   ```bash
+   az aks get-credentials --resource-group myResourceGroup --name myAKSCluster
+   ```
 
-9 - Run the Pipeline:
-Save and run the pipeline
-Review the stages as they execute
+2. **Check Pods**:
 
+   ```bash
+   kubectl get pods
+   ```
 
-10 - Verify Deployment:
-# Get AKS credentials
-az aks get-credentials --resource-group myResourceGroup --name myAKSCluster
+3. **Check Service (to get the external IP)**:
 
-# Check pods
-kubectl get pods
+   ```bash
+   kubectl get service flask-app
+   ```
 
-# Check service (to get external IP)
-kubectl get service flask-app
-
-
+---
